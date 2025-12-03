@@ -1,0 +1,25 @@
+body {
+    background: #111;
+    color: #fff;
+    font-family: monospace;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+}
+
+.container {
+    text-align: center;
+}
+
+h1 {
+    font-size: 2rem;
+    margin-bottom: 20px;
+}
+
+.timer {
+    font-size: 2rem;
+    margin-top: 15px;
+    color: #fff;
+}
