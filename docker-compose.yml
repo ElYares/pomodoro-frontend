@@ -1,0 +1,15 @@
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: pomodoro-frontend
+    restart: always
+    ports:
+      - "3000:80"
+    networks:
+      - pomodoro_net
+
+networks:
+  pomodoro_net:
+    external: true
