@@ -1,13 +1,25 @@
 ---
 import CoffeeCanvas from "../components/CoffeeCanvas.astro";
+import TaskList from "../components/TaskList.astro";
+import { getMockTasks } from "../services/mockTasks.js";
+
+const tasks = getMockTasks();
 ---
 
 <html>
-    <head>
-        <meta charset="UTF-8" />
-        <title>Pomodoro Pixel Coffee</title>
-    </head>
-    <body>
-        <CoffeeCanvas />
-    </body>
+  <head>
+    <title>Pomodoro Pixel Coffee</title>
+  </head>
+
+  <body>
+    <div style="display:flex; gap:40px; justify-content:center; align-items:flex-start; padding-top:30px;">
+
+      <CoffeeCanvas />
+
+      <TaskList tasks={tasks} />
+
+    </div>
+
+    <script type="module" src="/scripts/task-select.js"></script>
+  </body>
 </html>

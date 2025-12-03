@@ -8,22 +8,33 @@
 // =========================
 function getMockSession() {
     return {
-        duration_seconds: 5 * 60, // Duración total
-        remaining_seconds: 5 * 60, // Tiempo restante inicial
+        focus_duration: 60,     // 1 minuto para pruebas
+        break_duration: 15,     // 15 segundos de descanso (ejemplo)
+        state: "focus",         // Estado inicial
+        remaining_seconds: 60
     };
 }
+
 
 // =========================
 // CONFIGURACIÓN PRINCIPAL
 // =========================
 
 let session = getMockSession();
+let state = session.state;
+
 let remaining = session.remaining_seconds;
-let totalSeconds = session.duration_seconds;
+let totalSeconds = session.focus_duration; // inicia en focus
+
 
 const canvas = document.getElementById("coffeeCanvas");
 const ctx = canvas.getContext("2d");
 const timerLabel = document.getElementById("timer");
+
+const STATE = {
+    FOCUS: "focus",
+    BREAK: "break"
+};
 
 
 // Aumentamos el tamaño del pixel para que se vea más retro
@@ -48,6 +59,21 @@ let coffeeLevel = 1.0;
 
 // Sistema de partículas para el humo
 let steamParticles = [];
+
+function startBreak() {
+    state = STATE.BREAK;
+    totalSeconds = session.break_duration;
+    remaining = totalSeconds;
+    coffeeLevel = 0; // comienza vacío
+}
+
+function startFocus() {
+    state = STATE.FOCUS;
+    totalSeconds = session.focus_duration;
+    remaining = totalSeconds;
+    coffeeLevel = 1; // comienza lleno
+}
+
 
 // =========================
 // UTILIDADES DE DIBUJO
@@ -179,16 +205,32 @@ function formatTime(seconds) {
 // =========================
 
 function updateCoffeeLevel() {
-    coffeeLevel = remaining / totalSeconds;
     remaining -= 1;
 
-    if (remaining < 0) {
-        remaining = 0;
-        coffeeLevel = 0;
+    if (remaining < 0) remaining = 0;
+
+    // Actualizar timer
+    timerLabel.textContent = formatTime(remaining);
+
+    if (state === STATE.FOCUS) {
+        coffeeLevel = remaining / totalSeconds;
+
+        // Cuando el focus termina → empieza descanso
+        if (remaining <= 0) {
+            startBreak();
+        }
     }
 
-    timerLabel.textContent = formatTime(remaining);
+    else if (state === STATE.BREAK) {
+        coffeeLevel = 1 - (remaining / totalSeconds);
+
+        // Cuando descanso termina → vuelve a focus
+        if (remaining <= 0) {
+            startFocus();
+        }
+    }
 }
+
 
 // =========================
 // LOOP PRINCIPAL

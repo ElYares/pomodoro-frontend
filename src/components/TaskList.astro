@@ -1,0 +1,99 @@
+---
+interface Task {
+  id: string;
+  user_id: string;
+  title: string;
+  description: string;
+  project_id: string;
+  completed: boolean;
+  created_at: string;
+  updated_at: string;
+  status?: string;
+}
+
+const { tasks = [] } = Astro.props as { tasks: Task[] };
+---
+
+
+<div class="task-list">
+    <h2>Tareas</h2>
+
+    {tasks.map((task) => (
+        <div class={`task ${task.status}`} data-id={task.id}>
+            <div class="title">
+                {task.title}
+
+                {task.status === "in_progress" && <span class="dot yellow"></span>}
+                {task.status === "paused" && <span class="dot gray"></span>}
+                {task.completed && <span class="dot green"></span>}
+            </div>
+
+            <div class="desc">{task.description}</div>
+            <div class="meta">Proyecto: {task.project_id}</div>
+        </div>
+    ))}
+</div>
+
+
+
+<style>
+.task-list {
+    width: 260px;
+    padding: 12px;
+    background: #202020;
+    border-radius: 8px;
+}
+.task {
+    padding: 10px;
+    background: #2c2c2c;
+    border: 1px solid #3b3b3b;
+    border-radius: 6px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s;
+}
+.task:hover {
+    background: #3b3b3b;
+    border-color: #505050;
+}
+
+.title {
+    font-weight: bold;
+}
+.desc {
+    font-size: .85rem;
+    opacity: .8;
+}
+.meta {
+    font-size: .7rem;
+    opacity: .6;
+    margin-top: 4px;
+}
+
+.dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    margin-left: 6px;
+    border-radius: 50%;
+}
+
+.yellow { background: #f1c40f; }
+.gray   { background: #95a5a6; }
+.green  { background: #2ecc71; }
+
+.task.in_progress {
+    border-color: #f1c40f;
+}
+
+.task.paused {
+    border-color: #95a5a6;
+}
+
+.task.completed {
+    border-color: #2ecc71;
+    opacity: 0.6;
+    text-decoration: line-through;
+}
+
+</style>
