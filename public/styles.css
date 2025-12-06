@@ -1,171 +1,223 @@
+/* --- BASE --- */
 body {
-    background: #111;
-    color: #fff;
-    font-family: monospace;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-    margin: 0;
+  background-color: #09090b; /* Fondo Negro Profundo */
+  color: #e4e4e7;
+  font-family: 'Inter', sans-serif;
+  margin: 0;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
 }
 
-.container {
-    text-align: center;
+/* --- LAYOUT PRINCIPAL --- */
+.dashboard-container {
+  display: flex;
+  flex-direction: row;
+  gap: 30px;
+  width: 90%;
+  max-width: 1000px;
+  height: 600px;
 }
 
-h1 {
-    font-size: 2rem;
-    margin-bottom: 20px;
+/* --- PANEL IZQUIERDO (CAFÉ) --- */
+.left-panel {
+  flex: 1;
+  background-color: #161616; /* Gris Oscuro */
+  border: 1px solid #27272a;
+  border-radius: 24px;
+  
+  /* ✨ MAGIA DE CENTRADO ✨ */
+  display: flex;
+  flex-direction: column;
+  justify-content: center; /* Centra verticalmente */
+  align-items: center;     /* Centra horizontalmente */
+  
+  position: relative;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.4);
 }
 
-.timer {
-    font-size: 2rem;
-    margin-top: 15px;
-    color: #fff;
+.app-title {
+  position: absolute; /* Título fijo arriba */
+  top: 30px;
+  font-family: 'VT323', monospace;
+  font-size: 2.5rem;
+  color: #fff;
+  margin: 0;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  text-shadow: 0 0 10px rgba(255,255,255,0.1);
 }
 
-/* --- Estilos del Dashboard de Tareas --- */
-
-.task-container {
-    width: 300px; /* Ancho fijo para la barra lateral */
-    background: #1a1a1a;
-    padding: 20px;
-    border-radius: 12px;
-    box-sizing: border-box;
-    display: flex;
-    flex-direction: column;
-    height: fit-content;
-    max-height: 80vh;
+.canvas-container {
+  margin-top: 40px; /* Espacio para separarse del título */
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
-.header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-    border-bottom: 1px solid #333;
-    padding-bottom: 10px;
+/* --- TIMER DIGITAL --- */
+.timer-display {
+  font-family: 'VT323', monospace;
+  font-size: 3.5rem;
+  color: #fff;
+  margin-top: -15px; /* Pegarlo un poco a la taza */
+  margin-bottom: 15px;
+  text-align: center;
+  text-shadow: 0 0 15px rgba(255,255,255,0.2);
 }
 
-.header h2 {
-    font-size: 1.2rem;
-    margin: 0;
-    font-weight: 600;
+/* --- BOTONES DE CONTROL --- */
+.coffee-controls {
+  display: flex;
+  gap: 12px;
 }
 
-.count-badge {
-    background: #333;
-    padding: 2px 8px;
-    border-radius: 10px;
-    font-size: 0.8rem;
-    color: #aaa;
+.coffee-controls button {
+  background: #27272a;
+  color: #e4e4e7;
+  border: 1px solid #3f3f46;
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  font-size: 0.9rem;
+  transition: all 0.2s;
 }
 
-.scroll-area {
-    overflow-y: auto;       /* Permite scroll vertical */
-    overflow-x: hidden;     /* 🚫 BLOQUEA el scroll horizontal */
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    padding: 2px;           /* Un pequeño espacio interno para que no se corten sombras */
+.coffee-controls button:hover {
+  background: #3f3f46;
+  color: #fff;
+  transform: translateY(-1px);
 }
 
-/* --- Tarjeta de Tarea --- */
+/* --- PANEL DERECHO (LISTA) --- */
+.right-panel {
+  flex: 0 0 360px;
+  background-color: #161616;
+  border: 1px solid #27272a;
+  border-radius: 24px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+}
+
+.tasks-header {
+  padding: 24px;
+  background: #1a1a1a;
+  border-bottom: 1px solid #27272a;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.tasks-header h2 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: #fff;
+  font-weight: 600;
+}
+
+.counter-badge {
+  background: #27272a;
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  color: #a1a1aa;
+}
+
+.tasks-scroll-area {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Scrollbar Bonita */
+.tasks-scroll-area::-webkit-scrollbar { width: 6px; }
+.tasks-scroll-area::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
+
+/* --- TARJETAS DE TAREA --- */
 .task-card {
-    background: #252525;
-    border-radius: 6px;
-    padding: 12px;
-    cursor: pointer;
-    transition: transform 0.2s, background 0.2s;
-    border-left: 4px solid #555; /* Color por defecto (PENDING) */
-    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+  background-color: #1f1f22;
+  border: 1px solid #27272a;
+  border-radius: 12px;
+  padding: 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-left: 4px solid #52525b;
 }
 
 .task-card:hover {
-    transform: translateX(4px); /* Efecto de movimiento al pasar mouse */
-    background: #2a2a2a;
+  background-color: #27272a;
+  transform: translateX(4px);
 }
 
-/* --- Colores Dinámicos por Estado --- */
-
-/* EN CURSO: Amarillo/Dorado */
-.task-card.in_progress {
-    border-left-color: #f1c40f;
-}
-.task-card.in_progress .status-text {
-    color: #f1c40f;
+.task-card.active {
+  background-color: #27272a;
+  border-color: #71717a;
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.1);
 }
 
-/* COMPLETADA: Verde */
-.task-card.completed {
-    border-left-color: #2ecc71;
-    opacity: 0.7;
+/* Estados */
+.status-completed { border-left-color: #10b981; }
+.status-completed .task-title { text-decoration: line-through; color: #71717a; }
+.status-in_progress { border-left-color: #f59e0b; }
+.status-paused { border-left-color: #3b82f6; }
+.status-pending { border-left-color: #52525b; }
+
+/* Tipografía dentro de tarjeta */
+.card-header { display: flex; justify-content: space-between; margin-bottom: 6px; }
+.project-badge { font-size: 0.7rem; color: #71717a; text-transform: uppercase; font-weight: bold; }
+.task-title { margin: 0; font-size: 1rem; color: #f4f4f5; font-weight: 500; }
+.card-footer { margin-top: 10px; padding-top: 10px; border-top: 1px solid #27272a; display: flex; gap: 15px; font-size: 0.75rem; color: #71717a; }
+.stat-item { display: flex; align-items: center; gap: 5px; }
+
+/* =========================================
+   🎨 COLORES DE ESTADO (Oficiales)
+   ========================================= */
+
+/* --- 1. PENDING (Pendiente) - Color: Gris Neutro --- */
+.status-pending { 
+    border-left-color: #52525b; /* Zinc-600 */
 }
-.task-card.completed .status-text {
-    color: #2ecc71;
+.status-pending .card-footer {
+    color: #71717a;
 }
 
-/* PAUSADA: Azul/Grisáceo */
-.task-card.paused {
-    border-left-color: #3498db;
+/* --- 2. IN_PROGRESS (En Curso) - Color: Amarillo/Ámbar --- */
+.status-in_progress { 
+    border-left-color: #eab308; /* Yellow-500 */
+    background-color: #1c1917;  /* Un toque muy sutil de calidez en el fondo */
 }
-.task-card.paused .status-text {
-    color: #3498db;
-}
-
-/* --- Detalles Internos --- */
-.card-header {
-    display: flex;
-    justify-content: space-between;
-    font-size: 0.75rem;
-    margin-bottom: 6px;
-    text-transform: uppercase;
-    font-weight: bold;
-    letter-spacing: 0.5px;
+.status-in_progress .status-text { 
+    color: #facc15; /* Yellow-400 (Texto brillante) */
+    font-weight: 700;
+    text-shadow: 0 0 10px rgba(250, 204, 21, 0.2); /* Glow suave */
 }
 
-.project-name {
-    color: #777;
+/* --- 3. PAUSED (Pausada) - Color: Azul --- */
+.status-paused { 
+    border-left-color: #3b82f6; /* Blue-500 */
+}
+.status-paused .status-text { 
+    color: #60a5fa; /* Blue-400 */
 }
 
-.task-title {
-    margin: 0 0 6px 0;
-    font-size: 1rem;
-    font-weight: 500;
-    color: #eee;
+/* --- 4. COMPLETED (Completada) - Color: Verde --- */
+.status-completed { 
+    border-left-color: #22c55e; /* Green-500 */
+    opacity: 0.75; /* Un poco más apagada para no distraer */
 }
-
-.task-desc {
-    font-size: 0.8rem;
-    color: #aaa;
-    margin: 0 0 12px 0;
-    line-height: 1.4;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
+.status-completed .task-title { 
+    text-decoration: line-through; 
+    color: #52525b; /* Título tachado y oscuro */
 }
-
-.card-stats {
-    display: flex;
-    gap: 15px;
-    font-size: 0.75rem;
-    color: #888;
-    border-top: 1px solid #333;
-    padding-top: 8px;
-}
-
-.stat-item .label {
-    margin-right: 4px;
-}
-.stat-item .value {
-    color: #ddd;
-    font-weight: bold;
-}
-
-.empty-state {
-    text-align: center;
-    color: #555;
-    font-size: 0.9rem;
-    padding: 20px 0;
+.status-completed .status-text { 
+    color: #4ade80; /* Green-400 */
 }

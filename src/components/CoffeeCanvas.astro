@@ -1,41 +1,30 @@
 ---
+// src/components/CoffeeCanvas.astro
+// Limpio: Sin títulos extra, sin scripts duplicados, solo la UI.
 ---
 
-<link rel="stylesheet" href="/styles.css">
+<div class="coffee-widget">
+    <canvas id="coffeeCanvas" width="200" height="240"></canvas>
 
-<div class="container">
-    <h1>Pomodoro Pixel Coffee</h1>
-    <canvas id="coffeeCanvas" width="200" height="250"></canvas>
+    <div id="timer" class="timer-display">00:00</div>
 
-    <!-- Timer -->
-     <div id="timer" class="timer">00:00</div>
-
-     <div class="buttons">
-        <button onclick="pauseTask()">Pausar</button>
-        <button onclick="completeTask()">Completar</button>
+    <div class="coffee-controls">
+        <button id="btn-pause" onclick="window.pauseTask()">Pausar</button>
+        <button id="btn-resume" onclick="window.resumeTask()">Continuar</button>
+        <button id="btn-complete" onclick="window.completeTask()">Completar</button>
     </div>
 </div>
 
-<script src="/scripts/coffee.js" defer></script>
-
 <style>
-.buttons {
-    margin-top: 15px;
-    display: flex;
-    gap: 10px;
-    justify-content: center;
-}
+    .coffee-widget {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
 
-button {
-    background: #333;
-    color: white;
-    border: 1px solid #555;
-    padding: 8px 14px;
-    border-radius: 6px;
-    cursor: pointer;
-}
-
-button:hover {
-    background: #444;
-}
+    /* Estilo específico para el canvas si hace falta */
+    canvas {
+        margin-bottom: 10px;
+    }
 </style>
