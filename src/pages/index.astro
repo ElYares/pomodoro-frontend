@@ -1,9 +1,7 @@
 ---
 import CoffeeCanvas from "../components/CoffeeCanvas.astro";
-import TaskList from "../components/TaskList.astro";
-import { getMockTasks } from "../services/mockTasks.js";
 
-const tasks = getMockTasks();
+const USER_ID = "123"; // por ahora usuario fijo
 ---
 
 <html>
@@ -11,15 +9,39 @@ const tasks = getMockTasks();
     <title>Pomodoro Pixel Coffee</title>
   </head>
 
-  <body>
-    <div style="display:flex; gap:40px; justify-content:center; align-items:flex-start; padding-top:30px;">
+  <body
+    style="
+      display:flex;
+      justify-content:center;
+      align-items:flex-start;
+      padding-top:30px;
+      background:#121212;
+      color:#f5f5f5;
+      font-family:system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    "
+  >
+    <div
+      style="
+        display:flex;
+        gap:40px;
+        align-items:flex-start;
+      "
+    >
+      <!-- 🧋 Lado izquierdo: taza de café pixel -->
+      <section>
+        <CoffeeCanvas />
+      </section>
 
-      <CoffeeCanvas />
-
-      <TaskList tasks={tasks} />
-
+      <!-- ✅ Lado derecho: aquí se monta el panel de tareas -->
+      <section>
+        <div id="tasks-root" data-user-id={USER_ID}></div>
+      </section>
     </div>
 
-    <script type="module" src="/scripts/task-select.js"></script>
+    <!-- Script que trae tareas del backend y las dibuja en #tasks-root -->
+    <script type="module" src="/scripts/tasks-client.js"></script>
+
+    <!-- Tu script actual de la taza (animación, timer, etc.) -->
+    <script type="module" src="/scripts/coffee.js"></script>
   </body>
 </html>

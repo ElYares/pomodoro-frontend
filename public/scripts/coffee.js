@@ -215,11 +215,16 @@ function updateCoffeeLevel() {
     if (state === STATE.FOCUS) {
         coffeeLevel = remaining / totalSeconds;
 
-        // Cuando el focus termina → empieza descanso
         if (remaining <= 0) {
+            // Avisar al backend: focus terminado
+            if (window.currentSessionId) {
+                finishSession(window.currentSessionId);
+            }
+
             startBreak();
         }
     }
+
 
     else if (state === STATE.BREAK) {
         coffeeLevel = 1 - (remaining / totalSeconds);

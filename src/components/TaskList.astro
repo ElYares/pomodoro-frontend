@@ -9,91 +9,275 @@ interface Task {
   created_at: string;
   updated_at: string;
   status?: string;
+  pomodoros_completed?: number;
+  total_focus_minutes?: number;
 }
 
-const { tasks = [] } = Astro.props as { tasks: Task[] };
+const { tasks = [], userId } = Astro.props as { tasks: Task[]; userId?: string };
+
+// Helper para convertir status técnico a texto legible (opcional)
+const formatStatus = (status?: string) => {
+  const map: Record<string, string> = {
+    IN_PROGRESS: "En curso",
+    PAUSED: "Pausada",
+    COMPLETED: "Hecha",
+    PENDING: "Pendiente"
+  };
+  return map[status || ""] || status;
+};
+
+// Helper para clases de estado (mantenemos tu lógica base pero simplificada)
+const getStatusClass = (status?: string) => {
+  return status ? status.toLowerCase() : "pending";
+};
 ---
 
+<div class="task-container">
+  <div class="header">
+    <h2>Mis Tareas</h2>
+    <span class="count-badge">{tasks.length}</span>
+  </div>
 
-<div class="task-list">
-    <h2>Tareas</h2>
+  <div class="scroll-area">
+    {tasks.length === 0 ? (
+      <div class="empty-state">
+        <p>No hay tareas activas</p>
+        <span>¡Hora de un café! ☕</span>
+      </div>
+    ) : (
+      tasks.map((task) => (
+        <div
+          class={`task-card ${getStatusClass(task.status)}`}
+          data-id={task.id}
+          data-task-id={task.id}
+          data-user-id={userId ?? task.user_id}
+          data-task-status={task.status}
+        >
+          {/* Cabecera de la tarjeta: Proyecto y Estado */}
+          <div class="card-top">
+            <span class="project-tag">
+              <span class="hash">#</span>{task.project_id}
+            </span>
+            {task.status && (
+              <span class="status-badge">
+                {formatStatus(task.status)}
+              </span>
+            )}
+          </div>
 
-    {tasks.map((task) => (
-        <div class={`task ${task.status}`} data-id={task.id}>
-            <div class="title">
-                {task.title}
+          {/* Cuerpo: Título y Descripción */}
+          <div class="card-body">
+            <h3 class="task-title">{task.title}</h3>
+            <p class="task-desc">{task.description}</p>
+          </div>
 
-                {task.status === "in_progress" && <span class="dot yellow"></span>}
-                {task.status === "paused" && <span class="dot gray"></span>}
-                {task.completed && <span class="dot green"></span>}
+          {/* Footer: Métricas */}
+          <div class="card-footer">
+            <div class="stat" title="Pomodoros completados">
+              <span class="icon">🍅</span>
+              <span>{task.pomodoros_completed ?? 0}</span>
             </div>
-
-            <div class="desc">{task.description}</div>
-            <div class="meta">Proyecto: {task.project_id}</div>
+            <div class="stat" title="Tiempo total">
+              <span class="icon">⏱</span>
+              <span>{task.total_focus_minutes ?? 0}m</span>
+            </div>
+          </div>
         </div>
-    ))}
+      ))
+    )}
+  </div>
 </div>
 
-
-
 <style>
-.task-list {
-    width: 260px;
+  /* --- Contenedor Principal --- */
+  .task-container {
+    width: 100%; /* Se adapta al padre, idealmente 280px-320px */
+    max-width: 320px;
+    height: 100%;
+    background-color: #121212; /* Fondo muy oscuro */
+    display: flex;
+    flex-direction: column;
+    padding: 16px;
+    box-sizing: border-box;
+    font-family: system-ui, -apple-system, sans-serif;
+    color: #e4e4e7;
+  }
+
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+    padding: 0 4px;
+  }
+
+  .header h2 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin: 0;
+    color: #ffffff;
+  }
+
+  .count-badge {
+    background: #27272a;
+    color: #a1a1aa;
+    font-size: 0.75rem;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-weight: 600;
+  }
+
+  /* --- Área de Scroll --- */
+  .scroll-area {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    overflow-y: auto;
+    overflow-x: hidden; /* <--- AGREGA ESTO */
+    padding: 2px;       /* <--- AGREGA ESTO (Opcional, ayuda con las sombras) */
+    padding-bottom: 20px;
+    /* Scrollbar fina */
+    scrollbar-width: thin;
+    scrollbar-color: #3f3f46 transparent;
+  }
+  
+  .scroll-area::-webkit-scrollbar {
+    width: 4px;
+  }
+  .scroll-area::-webkit-scrollbar-thumb {
+    background-color: #3f3f46;
+    border-radius: 4px;
+  }
+
+  /* --- Tarjeta de Tarea (Card) --- */
+  .task-card {
+    background: #1e1e20;
+    border: 1px solid #2d2d30;
+    border-radius: 12px;
     padding: 12px;
-    background: #202020;
-    border-radius: 8px;
-}
-.task {
-    padding: 10px;
-    background: #2c2c2c;
-    border: 1px solid #3b3b3b;
-    border-radius: 6px;
-    margin-bottom: 10px;
     cursor: pointer;
-    transition: background 0.2s, border-color 0.2s;
-}
-.task:hover {
-    background: #3b3b3b;
-    border-color: #505050;
-}
+    transition: all 0.2s ease;
+    position: relative;
+    overflow: hidden;
+  }
 
-.title {
-    font-weight: bold;
-}
-.desc {
-    font-size: .85rem;
-    opacity: .8;
-}
-.meta {
-    font-size: .7rem;
-    opacity: .6;
-    margin-top: 4px;
-}
+  .task-card:hover {
+    background: #232326;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    border-color: #3f3f46;
+  }
 
-.dot {
-    display: inline-block;
-    width: 8px;
-    height: 8px;
-    margin-left: 6px;
-    border-radius: 50%;
-}
+  /* Estados Seleccionado (Lógica existente) */
+  .task-card.task-selected {
+    border-color: #fbbf24; /* Amber-400 */
+    box-shadow: 0 0 0 1px rgba(251, 191, 36, 0.2);
+  }
 
-.yellow { background: #f1c40f; }
-.gray   { background: #95a5a6; }
-.green  { background: #2ecc71; }
+  /* --- Estructura Interna de la Card --- */
+  .card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
 
-.task.in_progress {
-    border-color: #f1c40f;
-}
+  .project-tag {
+    font-size: 0.7rem;
+    color: #71717a;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+  }
+  .project-tag .hash { color: #52525b; margin-right: 1px; }
 
-.task.paused {
-    border-color: #95a5a6;
-}
+  .status-badge {
+    font-size: 0.65rem;
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+  }
 
-.task.completed {
-    border-color: #2ecc71;
-    opacity: 0.6;
+  .card-body {
+    margin-bottom: 12px;
+  }
+
+  .task-title {
+    font-size: 0.95rem;
+    margin: 0 0 4px 0;
+    font-weight: 600;
+    line-height: 1.4;
+    color: #f4f4f5;
+  }
+
+  .task-desc {
+    font-size: 0.8rem;
+    color: #a1a1aa;
+    margin: 0;
+    display: -webkit-box;
+    -webkit-line-clamp: 2; /* Limita a 2 líneas */
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    line-height: 1.4;
+  }
+
+  .card-footer {
+    display: flex;
+    gap: 12px;
+    border-top: 1px solid #2d2d30;
+    padding-top: 8px;
+  }
+
+  .stat {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.75rem;
+    color: #71717a;
+    font-feature-settings: "tnum"; /* Números monoespaciados si la fuente soporta */
+  }
+  
+  .stat .icon { font-size: 0.9rem; opacity: 0.8; }
+
+  /* --- Variantes de Color por Estado --- */
+  
+  /* En Progreso: Amarillo/Ámbar */
+  .task-card.in_progress .status-badge {
+    background: rgba(251, 191, 36, 0.15);
+    color: #fbbf24;
+    border: 1px solid rgba(251, 191, 36, 0.2);
+  }
+  .task-card.in_progress:hover { border-color: rgba(251, 191, 36, 0.5); }
+
+  /* Completado: Verde/Esmeralda */
+  .task-card.completed {
+    opacity: 0.75;
+  }
+  .task-card.completed .task-title {
     text-decoration: line-through;
-}
+    color: #71717a;
+  }
+  .task-card.completed .status-badge {
+    background: rgba(52, 211, 153, 0.1);
+    color: #34d399;
+    border: 1px solid rgba(52, 211, 153, 0.2);
+  }
 
+  /* Pausado: Gris/Azulado */
+  .task-card.paused .status-badge {
+    background: rgba(148, 163, 184, 0.15);
+    color: #94a3b8;
+  }
+
+  /* Empty State */
+  .empty-state {
+    text-align: center;
+    padding: 30px 10px;
+    color: #52525b;
+    font-size: 0.9rem;
+    border: 2px dashed #27272a;
+    border-radius: 12px;
+  }
 </style>

@@ -1,39 +1,73 @@
-import { getMockTasks } from "/src/services/mockTasks.js";
+// public/scripts/task-select.js
+import { startSession } from "./sessionsApi.js";
 
-let tasks = getMockTasks();
-let selectedTask = document.getElementById("selectedTask");
+const DEFAULT_FOCUS_MINUTES = 25;
+const DEFAULT_BREAK_MINUTES = 5;
 
-// Permite que coffee.js reinicie pomodoro
-const reset = window.resetPomodoro;
+let currentSession = null;
+let currentTaskId = null;
 
-// ► Al seleccionar tarea
-document.addEventListener("click", (e) => {
-    const el = e.target.closest(".task");
-    if (!el) return;
+export function getCurrentSession() {
+  return currentSession;
+}
 
-    const id = el.dataset.id;
-    const task = tasks.find(t => t.id === id);
+export function getCurrentTaskId() {
+  return currentTaskId;
+}
 
-    // Cambiar estado:
-    tasks.forEach(t => t.status = "pending"); // resetear otras
-    task.status = "in_progress";
+function setupTaskClickHandlers() {
+  const taskElements = document.querySelectorAll(".task-list .task");
+  console.log("🔎 [task-select] .task-list .task encontrados:", taskElements.length);
 
-    selectedTask.textContent = task.title;
+  if (!taskElements.length) {
+    console.warn("⚠ No se encontraron tareas en el DOM");
+  }
 
-    reset(); // reiniciar pomodoro
+  taskElements.forEach((el) => {
+    el.addEventListener("click", async () => {
+      const taskId = el.dataset.taskId || el.dataset.id;
+      const userId = el.dataset.userId || "123";
+
+      console.log("🖱 Click en tarea:", { taskId, userId });
+
+      if (!taskId) {
+        console.error("❌ Task sin data-task-id");
+        return;
+      }
+
+      // Visual: marcar seleccionado
+      document
+        .querySelectorAll(".task-list .task")
+        .forEach((t) => t.classList.remove("task-selected"));
+      el.classList.add("task-selected");
+
+      try {
+        const session = await startSession({
+          userId,
+          taskId,
+          focus: DEFAULT_FOCUS_MINUTES,
+          breakMin: DEFAULT_BREAK_MINUTES,
+        });
+
+        currentSession = session;
+        currentTaskId = taskId;
+
+        console.log("✅ Sesión iniciada:", session);
+
+        // Notificar a otros scripts (ej. coffee.js)
+        const event = new CustomEvent("pomodoro:session-started", {
+          detail: { session },
+        });
+        window.dispatchEvent(event);
+      } catch (err) {
+        console.error("❌ Error al iniciar sesión:", err);
+        alert("No se pudo iniciar la sesión Pomodoro 😢");
+      }
+    });
+  });
+}
+
+window.addEventListener("DOMContentLoaded", () => {
+  console.log("🚀 [task-select] DOMContentLoaded");
+  setupTaskClickHandlers();
 });
-
-// ► Pausar tarea actual
-window.pauseTask = function() {
-    const task = tasks.find(t => t.status === "in_progress");
-    if (task) task.status = "paused";
-};
-
-// ► Completar tarea actual
-window.completeTask = function() {
-    const task = tasks.find(t => t.status === "in_progress" || t.status === "paused");
-    if (task) {
-        task.status = "completed";
-        task.completed = true; // coincide con backend real
-    }
-};
