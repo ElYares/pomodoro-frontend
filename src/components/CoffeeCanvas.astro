@@ -4,27 +4,40 @@
 ---
 
 <div class="coffee-widget">
-    <canvas id="coffeeCanvas" width="200" height="240"></canvas>
+  <canvas id="coffeeCanvas" width="200" height="240"></canvas>
 
-    <div id="timer" class="timer-display">00:00</div>
+  <div id="timer" class="timer-display">00:00</div>
 
-    <div class="coffee-controls">
-        <button id="btn-pause" onclick="window.pauseTask()">Pausar</button>
-        <button id="btn-resume" onclick="window.resumeTask()">Continuar</button>
-        <button id="btn-complete" onclick="window.completeTask()">Completar</button>
-    </div>
+  <!-- 🔹 NUEVO: texto con info del ciclo actual -->
+  <div id="pomo-meta" class="pomo-meta">
+    Listo para empezar
+  </div>
+
+  <div class="coffee-controls">
+    <button id="btn-pause" onclick="window.pauseTask()">Pausar</button>
+    <button id="btn-complete" onclick="window.completeTask()">Completar</button>
+  </div>
 </div>
 
 <style>
-    .coffee-widget {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-    }
+  .coffee-widget {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
 
-    /* Estilo específico para el canvas si hace falta */
-    canvas {
-        margin-bottom: 10px;
-    }
+  canvas {
+    margin-bottom: 10px;
+  }
+
+  /* 🔹 NUEVO: estilo del texto de ciclo */
+  .pomo-meta {
+    margin-top: 4px;
+    margin-bottom: 12px;
+    font-size: 0.8rem;
+    color: #a1a1aa;
+    font-family: 'Inter', sans-serif;
+    text-align: center;
+  }
 </style>

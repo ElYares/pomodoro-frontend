@@ -1,15 +1,22 @@
+// public/scripts/sessionsApi.js
 const API = "http://localhost:8080/api/v1";
 
-export async function startSession({ userId, taskId, focus, breakMin }) {
+/**
+ * Crea una sesión de Pomodoro y devuelve TODO el objeto sesión.
+ * El backend es el que decide cómo interpretar focus_minutes/break_minutes.
+ */
+export async function startSession({ userId, taskId, focus, breakMin } = {}) {
+  const payload = {
+    user_id: userId,
+    task_id: taskId,
+    focus_minutes: typeof focus === "number" ? focus : 25,
+    break_minutes: typeof breakMin === "number" ? breakMin : 5,
+  };
+
   const res = await fetch(`${API}/sessions`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      user_id: userId,
-      task_id: taskId,
-      focus_minutes: focus,
-      break_minutes: breakMin,
-    }),
+    body: JSON.stringify(payload),
   });
 
   if (!res.ok) {
@@ -42,5 +49,5 @@ export async function finishSession(sessionId) {
     method: "PATCH",
   });
   if (!res.ok) throw new Error("Error finalizando sesión");
-  return res.json();
+  return res.json(); // { session, total_pomodoros, index_in_cycle, ... }
 }

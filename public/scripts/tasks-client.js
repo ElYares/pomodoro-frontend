@@ -2,16 +2,24 @@
 import {
   startSession,
   pauseSession,
-  resumeSession,   // 👈 AHORA TAMBIÉN IMPORTAMOS ESTO
+  resumeSession,
   finishSession,
 } from "./sessionsApi.js";
 
 const API_BASE = "http://localhost:8080/api/v1";
 
-let allTasks = [];        // Memoria local de tareas
+// ⚙️ Config POMODORO (TEST)
+const POMODOROS_PER_CYCLE = 4;
+const FOCUS_MIN = 1;    // 1 minuto de foco
+const SHORT_BREAK = 1;  // 1 minuto descanso corto
+const LONG_BREAK = 2;   // 2 minutos descanso largo
+
+let allTasks = [];
 let currentSession = null;
 let currentTaskId = null;
 let currentUserId = null;
+let currentTaskData = null;   // última tarea seleccionada
+let lastCycleInfo = null;     // info devuelta por finishSession
 
 // Mapeo visual opcional
 const statusLabels = {
@@ -55,14 +63,13 @@ function renderTasks(root, tasks) {
   const html = tasks
     .map((task) => {
       const rawStatus = task.status || "PENDING";
-      const statusCode = rawStatus.toLowerCase(); // "IN_PROGRESS" -> "in_progress"
+      const statusCode = rawStatus.toLowerCase();
       const statusText =
         statusLabels[rawStatus] || statusLabels.PENDING || rawStatus;
       const project = task.project_id || "General";
 
       return `
         <div class="task-card status-${statusCode}" data-task-id="${task.id}">
-          
           <div class="card-header">
             <span class="project-badge">${project}</span>
           </div>
@@ -83,13 +90,20 @@ function renderTasks(root, tasks) {
               ${statusText}
             </div>
           </div>
-
         </div>
       `;
     })
     .join("");
 
   root.innerHTML = html;
+}
+
+// Helper para actualizar el texto bajo el reloj
+function updatePomodoroMeta(pomodoroIndex, cycleNumber) {
+  const metaEl = document.getElementById("pomo-meta");
+  if (!metaEl) return;
+
+  metaEl.textContent = `Pomodoro ${pomodoroIndex} de ${POMODOROS_PER_CYCLE} · Ciclo ${cycleNumber}`;
 }
 
 // ─────────────────────────────────────
@@ -132,36 +146,70 @@ window.addEventListener("DOMContentLoaded", async () => {
       return;
     }
 
-    // Debug de la tarea seleccionada
+    currentTaskData = taskData;
+    currentTaskId = taskData.id;
+
     console.clear();
     console.log(
-      "%c Tarea Seleccionada: ",
+      "%c Tarea Seleccionada ",
       "background: #222; color: #bada55; padding: 4px; border-radius: 4px;"
     );
     console.log(taskData);
 
     try {
-      // 1️⃣ Iniciar sesión real en backend
+      // 1) Calcular qué pomodoro toca AHORA (para esta tarea)
+      const completedSoFar = taskData.pomodoros_completed || 0;
+      const totalAfter = completedSoFar + 1; // el que vamos a arrancar
+
+      let indexInCycle = totalAfter % POMODOROS_PER_CYCLE;
+      if (indexInCycle === 0) indexInCycle = POMODOROS_PER_CYCLE;
+
+      const isEndOfCycle = indexInCycle === POMODOROS_PER_CYCLE;
+      const focusMinutes = FOCUS_MIN;
+      const breakMinutes = isEndOfCycle ? LONG_BREAK : SHORT_BREAK;
+
+      const cyclesDone = Math.floor((totalAfter - 1) / POMODOROS_PER_CYCLE);
+      const currentCycleNumber = cyclesDone + 1;
+
+      console.log("🔁 Ciclo Pomodoro:", {
+        completedSoFar,
+        totalAfter,
+        indexInCycle,
+        isEndOfCycle,
+        focusMinutes,
+        breakMinutes,
+        currentCycleNumber,
+      });
+
+      updatePomodoroMeta(indexInCycle, currentCycleNumber);
+
+      // 2) Crear sesión en backend
       const session = await startSession({
         userId: taskData.user_id || userId,
         taskId: taskData.id,
-        focus: 25, // minutos focus por defecto
-        breakMin: 5, // minutos descanso por defecto
+        focus: focusMinutes,
+        breakMin: breakMinutes,
       });
 
       currentSession = session;
-      currentTaskId = taskData.id;
+      console.log("✅ Sesión creada desde backend", session);
 
-      console.log("✅ Sesión iniciada en backend:", session);
+      const usedFocusMinutes =
+        session.focus_minutes ?? session.focusMinutes ?? focusMinutes;
+      const usedBreakMinutes =
+        session.break_minutes ?? session.breakMinutes ?? breakMinutes;
 
-      // 2️⃣ Notificar a coffee.js para arrancar el timer
-      const focusMinutes =
-        session.focus_minutes || session.focusMinutes || 25;
+      console.log("⏱ Minutos usados para el timer:", {
+        focusMinutes: usedFocusMinutes,
+        breakMinutes: usedBreakMinutes,
+      });
 
+      // 3) Arrancar timer en coffee.js
       window.dispatchEvent(
         new CustomEvent("startTaskTimer", {
           detail: {
-            minutes: focusMinutes,
+            minutes: usedFocusMinutes,
+            breakMinutes: usedBreakMinutes, // solo para log
             taskTitle: taskData.title,
             sessionId: session.id,
             taskId: taskData.id,
@@ -173,6 +221,140 @@ window.addEventListener("DOMContentLoaded", async () => {
       alert("No se pudo iniciar la sesión Pomodoro 😢");
     }
   });
+});
+
+// ─────────────────────────────────────
+// Eventos que vienen DESDE coffee.js
+// ─────────────────────────────────────
+
+// Cuando termina el FOCUS automáticamente
+window.addEventListener("pomodoro:focus-finished", async (e) => {
+  if (!currentSession || !currentSession.id) {
+    console.warn("⚠️ focus-finished pero no hay currentSession");
+    return;
+  }
+
+  console.log(
+    "🎯 focus terminado, llamando finishSession backend:",
+    currentSession.id
+  );
+
+  try {
+    const result = await finishSession(currentSession.id);
+    console.log("🎯 Respuesta finishSession:", result);
+
+    lastCycleInfo = result;
+
+    const totalPomos = result.total_pomodoros ?? 0;
+    const indexInCycle = result.index_in_cycle ?? 1;
+    const cyclesDone = result.cycles_done ?? 0;
+    const nextBreakMinutes = result.next_break_minutes ?? SHORT_BREAK;
+
+    // Actualizar texto bajo el reloj con datos del backend
+    updatePomodoroMeta(indexInCycle, cyclesDone + 1);
+
+    // Recargar tareas para mostrar 🍅 y minutos actualizados
+    if (currentUserId) {
+      const root = document.getElementById("tasks-root");
+      if (root) {
+        const tasks = await fetchTasksByUser(currentUserId);
+        renderTasks(root, tasks);
+      }
+    }
+
+    // Decirle a coffee.js cuánto debe durar el BREAK
+    window.dispatchEvent(
+      new CustomEvent("pomodoro:start-break", {
+        detail: { breakMinutes: nextBreakMinutes },
+      })
+    );
+  } catch (err) {
+    console.error("❌ Error en finishSession (focus-finished):", err);
+  }
+});
+
+// Cuando termina el BREAK automáticamente
+window.addEventListener("pomodoro:break-finished", async (e) => {
+  console.log("🟢 Break terminado (evento recibido en tasks-client)");
+
+  if (!lastCycleInfo || !currentTaskId) {
+    console.warn(
+      "⚠️ break-finished pero no hay lastCycleInfo o currentTaskId, no se auto-inicia el siguiente pomodoro."
+    );
+    return;
+  }
+
+  const isCycleEnd = lastCycleInfo.is_cycle_end;
+  const totalPomos = lastCycleInfo.total_pomodoros ?? 0;
+
+  if (isCycleEnd) {
+    console.log("✅ Ciclo completo, no se crea nueva sesión automática.");
+    // Puedes opcionalmente poner un mensaje en pomo-meta:
+    updatePomodoroMeta(POMODOROS_PER_CYCLE, lastCycleInfo.cycles_done + 1);
+    return;
+  }
+
+  // 👉 Crear automáticamente el siguiente pomodoro del ciclo
+  const completedSoFar = totalPomos; // ya terminados
+  const totalAfter = completedSoFar + 1;
+
+  let indexInCycle = totalAfter % POMODOROS_PER_CYCLE;
+  if (indexInCycle === 0) indexInCycle = POMODOROS_PER_CYCLE;
+
+  const isEndOfCycleNext = indexInCycle === POMODOROS_PER_CYCLE;
+  const focusMinutes = FOCUS_MIN;
+  const breakMinutes = isEndOfCycleNext ? LONG_BREAK : SHORT_BREAK;
+
+  const cyclesDone = Math.floor((totalAfter - 1) / POMODOROS_PER_CYCLE);
+  const currentCycleNumber = cyclesDone + 1;
+
+  console.log("🔁 Auto-siguiente Pomodoro:", {
+    completedSoFar,
+    totalAfter,
+    indexInCycle,
+    isEndOfCycleNext,
+    focusMinutes,
+    breakMinutes,
+    currentCycleNumber,
+  });
+
+  updatePomodoroMeta(indexInCycle, currentCycleNumber);
+
+  try {
+    const userId =
+      currentUserId ||
+      (currentTaskData && currentTaskData.user_id) ||
+      "123";
+
+    const newSession = await startSession({
+      userId,
+      taskId: currentTaskId,
+      focus: focusMinutes,
+      breakMin: breakMinutes,
+    });
+
+    currentSession = newSession;
+    console.log("✅ Nueva sesión AUTO creada", newSession);
+
+    const usedFocusMinutes =
+      newSession.focus_minutes ?? newSession.focusMinutes ?? focusMinutes;
+    const usedBreakMinutes =
+      newSession.break_minutes ?? newSession.breakMinutes ?? breakMinutes;
+
+    window.dispatchEvent(
+      new CustomEvent("startTaskTimer", {
+        detail: {
+          minutes: usedFocusMinutes,
+          breakMinutes: usedBreakMinutes,
+          taskTitle: currentTaskData ? currentTaskData.title : "Tarea",
+          sessionId: newSession.id,
+          taskId: currentTaskId,
+        },
+      })
+    );
+  } catch (err) {
+    console.error("❌ Error creando sesión automática:", err);
+  }
 });
 
 // ─────────────────────────────────────
@@ -188,7 +370,6 @@ async function pauseTask() {
     console.log("⏸ Solicitando pausa de sesión:", currentSession.id);
     await pauseSession(currentSession.id);
 
-    // Avisar a coffee.js para que detenga el timer
     window.dispatchEvent(
       new CustomEvent("pomodoro:pause", {
         detail: { sessionId: currentSession.id, taskId: currentTaskId },
@@ -209,8 +390,6 @@ async function resumeTask() {
   try {
     console.log("▶️ Solicitando reanudar sesión:", currentSession.id);
     const session = await resumeSession(currentSession.id);
-
-    // Por si el backend actualiza remaining, estado, etc.
     currentSession = session;
 
     window.dispatchEvent(
@@ -231,10 +410,10 @@ async function completeTask() {
   }
 
   try {
-    console.log("✅ Solicitando finalizar sesión:", currentSession.id);
+    console.log("✅ Solicitando finalizar sesión (botón Completar):", currentSession.id);
     await finishSession(currentSession.id);
 
-    // 🟢 NUEVO: marcar la tarea como COMPLETED en el backend
+    // Marcar la tarea como COMPLETED en backend
     if (currentTaskId) {
       console.log("✅ Marcando tarea como COMPLETADA:", currentTaskId);
       const res = await fetch(`${API_BASE}/tasks/${currentTaskId}/complete`, {
@@ -250,16 +429,12 @@ async function completeTask() {
       }
     }
 
-    // Avisar a coffee.js para que termine el timer
     window.dispatchEvent(
       new CustomEvent("pomodoro:completed", {
         detail: { sessionId: currentSession.id, taskId: currentTaskId },
       })
     );
 
-    // 🔄 Recargar tareas para reflejar:
-    // - status = COMPLETED
-    // - métricas actualizadas (pomodoros, minutos, etc.)
     if (currentUserId) {
       const root = document.getElementById("tasks-root");
       if (root) {
@@ -273,8 +448,7 @@ async function completeTask() {
   }
 }
 
-
-// Exponer funciones globales para los botones de CoffeeCanvas
+// Exponer funciones globales para los botones
 window.pauseTask = pauseTask;
-window.resumeTask = resumeTask;   // 👈 AHORA TAMBIÉN ESTO
+window.resumeTask = resumeTask;
 window.completeTask = completeTask;
