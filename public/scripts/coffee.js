@@ -42,7 +42,15 @@ let steamParticles = [];
 
 // Iniciar timer de tarea (FOCUS)
 window.addEventListener("startTaskTimer", (e) => {
-  const { minutes, taskTitle, sessionId, taskId, breakMinutes } = e.detail;
+  const {
+    minutes,
+    taskTitle,
+    sessionId,
+    taskId,
+    breakMinutes,
+    remainingSeconds,
+    paused,
+  } = e.detail;
   console.log(
     `☕ Coffee: Iniciando timer para "${taskTitle}" (${minutes} min focus${
       breakMinutes ? ` / ${breakMinutes} min break` : ""
@@ -54,11 +62,11 @@ window.addEventListener("startTaskTimer", (e) => {
   currentTaskIdForCanvas = taskId || null;
 
   totalSeconds = minutes * 60;
-  remaining = totalSeconds;
+  remaining = typeof remainingSeconds === "number" ? remainingSeconds : totalSeconds;
 
-  state = STATE.FOCUS;
-  coffeeLevel = 1.0;
-  isRunning = true;
+  state = paused ? STATE.PAUSED : STATE.FOCUS;
+  coffeeLevel = totalSeconds > 0 ? remaining / totalSeconds : 1;
+  isRunning = !paused;
 
   updateTimerDisplay();
 });
@@ -155,6 +163,16 @@ function updateTimerDisplay() {
 
   document.title = `${m}:${s} - ${modeLabel}`;
 }
+
+window.getPomodoroSnapshot = function getPomodoroSnapshot() {
+  return {
+    state,
+    remaining,
+    totalSeconds,
+    sessionId: currentSessionId,
+    taskId: currentTaskIdForCanvas,
+  };
+};
 
 function updateLogic() {
   if (!isRunning) return;

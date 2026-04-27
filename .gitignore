@@ -1,5 +1,8 @@
 # build output
 dist/
+.desktop-data/
+backend/.data/
+release/
 
 # generated types
 .astro/

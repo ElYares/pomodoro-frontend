@@ -1,14 +1,53 @@
 {
   "name": "pomodoro-frontend",
+  "description": "Pomodoro desktop and web app built with Astro, Electron, and Express.",
+  "author": {
+    "name": "ElYares",
+    "email": "yared.elizondo.ingsoft@gmail.com"
+  },
+  "homepage": "https://github.com/ElYares/pomodoro-frontend",
   "type": "module",
   "version": "0.0.1",
+  "main": "desktop/main.mjs",
   "scripts": {
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "astro": "astro"
+    "astro": "astro",
+    "desktop:dev": "node scripts/desktop-dev.mjs",
+    "desktop:start": "npm run build && electron .",
+    "desktop:package": "npm run build && NODE_OPTIONS=--require=./scripts/electron-builder-shell-fix.cjs npm_config_loglevel=error electron-builder --dir",
+    "desktop:dist": "npm run build && NODE_OPTIONS=--require=./scripts/electron-builder-shell-fix.cjs npm_config_loglevel=error electron-builder",
+    "desktop:dist:linux": "npm run build && NODE_OPTIONS=--require=./scripts/electron-builder-shell-fix.cjs npm_config_loglevel=error electron-builder --linux AppImage",
+    "desktop:dist:deb": "npm run build && NODE_OPTIONS=--require=./scripts/electron-builder-shell-fix.cjs npm_config_loglevel=error electron-builder --linux deb",
+    "desktop:launcher": "node scripts/install-desktop-entry.mjs",
+    "desktop:install": "node scripts/install-desktop-entry.mjs --install"
   },
-  "dependencies": {
-    "astro": "^5.16.3"
+  "devDependencies": {
+    "astro": "^5.16.3",
+    "electron": "^41.2.2",
+    "electron-builder": "^26.0.12"
+  },
+  "build": {
+    "appId": "com.pomodoropixel.desktop",
+    "productName": "Pomodoro Pixel",
+    "asar": false,
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "desktop/**/*",
+      "backend/**/*",
+      "backend/node_modules/**/*",
+      "package.json"
+    ],
+    "linux": {
+      "maintainer": "ElYares <yared.elizondo.ingsoft@gmail.com>",
+      "category": "Office",
+      "target": [
+        "AppImage"
+      ]
+    }
   }
 }

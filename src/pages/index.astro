@@ -1,6 +1,5 @@
 ---
 import CoffeeCanvas from "../components/CoffeeCanvas.astro";
-const USER_ID = "123";
 ---
 
 <html>
@@ -11,11 +10,62 @@ const USER_ID = "123";
   </head>
 
   <body>
-    <main class="dashboard-container">
-      
+    <div id="auth-panel" class="auth-shell">
+      <section class="auth-card">
+        <div class="auth-copy">
+          <span class="eyebrow">Pomodoro Pixel</span>
+          <h1>Foco real con trazabilidad real.</h1>
+          <p>Crea tu cuenta, sube tareas desde Markdown y deja que cada pomodoro quede guardado.</p>
+        </div>
+
+        <div class="auth-box">
+          <div class="auth-tabs">
+            <button type="button" class="auth-tab active" data-auth-tab="login">Entrar</button>
+            <button type="button" class="auth-tab" data-auth-tab="register">Crear cuenta</button>
+          </div>
+
+          <p id="auth-message" class="feedback" hidden></p>
+
+          <form id="login-form" data-auth-form="login" class="auth-form">
+            <label>
+              <span>Email</span>
+              <input type="email" name="email" placeholder="tu@email.com" required />
+            </label>
+            <label>
+              <span>Password</span>
+              <input type="password" name="password" placeholder="••••••••" required />
+            </label>
+            <button type="submit" class="primary-button">Iniciar sesion</button>
+          </form>
+
+          <form id="register-form" data-auth-form="register" class="auth-form" hidden>
+            <label>
+              <span>Nombre</span>
+              <input type="text" name="name" placeholder="Elya" required />
+            </label>
+            <label>
+              <span>Email</span>
+              <input type="email" name="email" placeholder="tu@email.com" required />
+            </label>
+            <label>
+              <span>Password</span>
+              <input type="password" name="password" placeholder="Minimo 8 caracteres" required />
+            </label>
+            <button type="submit" class="primary-button">Crear cuenta</button>
+          </form>
+        </div>
+      </section>
+    </div>
+
+    <main id="dashboard" class="dashboard-container" hidden>
       <section class="left-panel">
-        <h1 class="app-title">Pomodoro Focus</h1>
-        
+        <div class="panel-top">
+          <div>
+            <span class="eyebrow">Pomodoro Pixel</span>
+            <h1 class="app-title">Focus Console</h1>
+          </div>
+          <p id="global-banner" class="feedback" data-tone="muted" hidden></p>
+        </div>
         <div class="canvas-container">
           <CoffeeCanvas />
         </div>
@@ -23,22 +73,36 @@ const USER_ID = "123";
 
       <section class="right-panel">
         <div class="tasks-header">
-          <h2>Mis Tareas</h2>
+          <div>
+            <h2>Mis Tareas</h2>
+            <p id="task-status" class="task-status-copy">Importa un Markdown y empieza tu siguiente bloque.</p>
+          </div>
           <span id="task-counter" class="counter-badge">0</span>
         </div>
-        
-        <div id="tasks-root" data-user-id={USER_ID} class="tasks-scroll-area"></div>
-      </section>
 
+        <div class="user-strip">
+          <div>
+            <strong id="user-name">Usuario</strong>
+            <span id="user-email">email</span>
+          </div>
+          <button id="logout-button" type="button" class="ghost-button">Salir</button>
+        </div>
+
+        <form id="import-form" class="import-card">
+          <div>
+            <strong>Importar desde Markdown</strong>
+            <p>Sube un archivo `.md` con checklist para crear tareas.</p>
+          </div>
+          <input type="file" name="file" accept=".md,text/markdown" />
+          <button type="submit" class="primary-button">Importar tareas</button>
+          <p id="import-message" class="feedback" hidden></p>
+        </form>
+        
+        <div id="tasks-root" class="tasks-scroll-area"></div>
+      </section>
     </main>
 
     <script type="module" src="/scripts/tasks-client.js"></script>
     <script type="module" src="/scripts/coffee.js"></script>
-
-    <script is:inline>
-      // Funciones globales para los botones HTML
-      window.pauseTask = () => alert("Función de pausa pendiente de conectar");
-      window.completeTask = () => alert("Función de completar pendiente de conectar");
-    </script>
   </body>
 </html>

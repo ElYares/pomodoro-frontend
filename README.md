@@ -1,46 +1,155 @@
-# Astro Starter Kit: Basics
+# Pomodoro Frontend + Backend
+
+Proyecto de Pomodoro con frontend en Astro, backend en Express y persistencia en PostgreSQL para web/Docker, más SQLite para escritorio.
+
+## Desktop branch
+
+La rama `v1-app-desktop` empieza la migración a escritorio con `Electron`.
+
+Estado actual de esta primera base:
+
+- levanta la UI Astro dentro de una ventana desktop
+- inyecta la URL de la API en runtime para no depender de una constante fija
+- arranca el backend local para el modo desktop
+- usa `SQLite` local para escritorio
+- mantiene `PostgreSQL` para el flujo web actual con Docker
+
+Pendiente para una siguiente fase:
+
+- afinado visual/UX del empaquetado e iconografía final
+
+## Servicios
+
+- `frontend`: Astro compilado y servido por Nginx en `http://localhost:3000`
+- `backend`: API REST en `http://localhost:8080/api/v1`
+- `db`: PostgreSQL en `localhost:5432`
+
+## Levantar el stack
 
 ```sh
-npm create astro@latest -- --template basics
+docker compose up -d --build
 ```
 
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
+## Desktop development
 
-## 🚀 Project Structure
+Requisitos:
 
-Inside of your Astro project, you'll see the following folders and files:
+- Node.js instalado
+- para escritorio ya no hace falta PostgreSQL
+- para el stack web/Docker se mantiene PostgreSQL
 
-```text
-/
-├── public/
-│   └── favicon.svg
-├── src
-│   ├── assets
-│   │   └── astro.svg
-│   ├── components
-│   │   └── Welcome.astro
-│   ├── layouts
-│   │   └── Layout.astro
-│   └── pages
-│       └── index.astro
-└── package.json
+Instalación inicial:
+
+```sh
+npm install
+cd backend && npm install
 ```
 
-To learn more about the folder structure of an Astro project, refer to [our guide on project structure](https://docs.astro.build/en/basics/project-structure/).
+Modo desktop con hot reload:
 
-## 🧞 Commands
+```sh
+npm run desktop:dev
+```
 
-All commands are run from the root of the project, from a terminal:
+Modo desktop contra el build de Astro:
 
-| Command                   | Action                                           |
-| :------------------------ | :----------------------------------------------- |
-| `npm install`             | Installs dependencies                            |
-| `npm run dev`             | Starts local dev server at `localhost:4321`      |
-| `npm run build`           | Build your production site to `./dist/`          |
-| `npm run preview`         | Preview your build locally, before deploying     |
-| `npm run astro ...`       | Run CLI commands like `astro add`, `astro check` |
-| `npm run astro -- --help` | Get help using the Astro CLI                     |
+```sh
+npm run desktop:start
+```
 
-## 👀 Want to learn more?
+Empaquetado desktop:
 
-Feel free to check [our documentation](https://docs.astro.build) or jump into our [Discord server](https://astro.build/chat).
+```sh
+npm run desktop:package
+npm run desktop:dist
+npm run desktop:dist:linux
+```
+
+El backend desktop escucha solo en `127.0.0.1` y usa SQLite local. El flujo Docker actual no cambia porque `docker-compose.yml` sigue levantando PostgreSQL para el stack web.
+
+En desktop, la persistencia queda en un archivo `SQLite`:
+
+- desarrollo: `.desktop-data/pomodoro.sqlite`
+- app desktop: directorio `userData` de Electron
+
+Notas de empaquetado:
+
+- `desktop:package` genera un bundle sin instalador en `release/`
+- `desktop:dist` intenta generar artefactos distribuibles con `electron-builder`
+- `desktop:dist:linux` genera `release/Pomodoro Pixel-0.0.1.AppImage`
+- para empaquetar, asegúrate de haber corrido también `npm install --prefix backend`
+- por ahora el empaquetado usa el icono por defecto de Electron hasta que definamos assets finales
+
+## API principal
+
+### Auth
+
+- `POST /api/v1/auth/register`
+- `POST /api/v1/auth/login`
+- `GET /api/v1/auth/me`
+- `POST /api/v1/auth/logout`
+
+### Tareas
+
+- `GET /api/v1/tasks/user/:userId`
+- `POST /api/v1/tasks`
+- `PUT /api/v1/tasks/:id`
+- `DELETE /api/v1/tasks/:id`
+- `PATCH /api/v1/tasks/:id/complete`
+- `POST /api/v1/tasks/import-markdown`
+
+### Sesiones Pomodoro
+
+- `GET /api/v1/sessions/active/:userId`
+- `POST /api/v1/sessions`
+- `PATCH /api/v1/sessions/:id/pause`
+- `PATCH /api/v1/sessions/:id/resume`
+- `PATCH /api/v1/sessions/:id/finish`
+
+## Reglas de Pomodoro implementadas
+
+- Cada sesión de enfoque dura `25` minutos.
+- Cada descanso corto dura `5` minutos.
+- Cada 4 pomodoros terminados, el siguiente descanso es largo de `15` minutos.
+- Se guarda trazabilidad por sesión en la tabla `pomodoro_sessions`.
+- Cada tarea acumula `pomodoros_completed` y `total_focus_minutes`.
+
+## Importar tareas desde Markdown
+
+Se aceptan checklist items en Markdown. El proyecto se toma del heading actual.
+
+Ejemplo en [tasks.example.md](/home/elyarestark/develop/pomodoro-frontend/tasks.example.md:1).
+
+### Formato
+
+```md
+# Proyecto
+
+- [ ] Tarea pendiente :: descripcion opcional
+- [x] Tarea completada :: descripcion opcional
+```
+
+### 1. Crear cuenta
+
+```sh
+curl -X POST http://localhost:8080/api/v1/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Elya","email":"elya@example.com","password":"supersecret"}'
+```
+
+La respuesta incluye `token` y `user.id`.
+
+### 2. Importar archivo usando el token
+
+```sh
+curl -X POST http://localhost:8080/api/v1/tasks/import-markdown \
+  -H "Authorization: Bearer TU_TOKEN" \
+  -F "file=@tasks.example.md"
+```
+
+### 3. Consultar tus tareas
+
+```sh
+curl http://localhost:8080/api/v1/tasks/user/TU_USER_ID \
+  -H "Authorization: Bearer TU_TOKEN"
+```

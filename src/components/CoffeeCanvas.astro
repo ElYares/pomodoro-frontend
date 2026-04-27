@@ -8,13 +8,35 @@
 
   <div id="timer" class="timer-display">00:00</div>
 
-  <!-- 🔹 NUEVO: texto con info del ciclo actual -->
   <div id="pomo-meta" class="pomo-meta">
     Listo para empezar
   </div>
 
+  <div class="session-card">
+    <div class="session-line">
+      <span class="session-label">Tarea</span>
+      <strong id="session-task">Selecciona una tarea</strong>
+    </div>
+    <div class="session-line">
+      <span class="session-label">Fase</span>
+      <strong id="session-phase">Idle</strong>
+    </div>
+    <p id="session-hint" class="session-hint">Importa tareas o elige una para comenzar.</p>
+  </div>
+
+  <div class="cycle-progress">
+    <div class="progress-head">
+      <span id="cycle-progress-label">0/4 pomodoros del ciclo</span>
+      <span id="break-badge">5 min break</span>
+    </div>
+    <div class="progress-track">
+      <div id="cycle-progress-fill" class="progress-fill"></div>
+    </div>
+  </div>
+
   <div class="coffee-controls">
     <button id="btn-pause" onclick="window.pauseTask()">Pausar</button>
+    <button id="btn-resume" onclick="window.resumeTask()">Continuar</button>
     <button id="btn-complete" onclick="window.completeTask()">Completar</button>
   </div>
 </div>
@@ -39,5 +61,72 @@
     color: #a1a1aa;
     font-family: 'Inter', sans-serif;
     text-align: center;
+  }
+
+  .session-card {
+    width: min(100%, 320px);
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 16px;
+    padding: 14px 16px;
+    margin-bottom: 14px;
+    box-sizing: border-box;
+  }
+
+  .session-line {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+
+  .session-label {
+    color: #8d8d95;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .session-line strong {
+    color: #f5f5f7;
+    font-size: 0.9rem;
+    text-align: right;
+  }
+
+  .session-hint {
+    margin: 0;
+    color: #a1a1aa;
+    font-size: 0.82rem;
+    line-height: 1.5;
+  }
+
+  .cycle-progress {
+    width: min(100%, 320px);
+    margin-bottom: 16px;
+  }
+
+  .progress-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    font-size: 0.78rem;
+    color: #b8b8bf;
+    margin-bottom: 8px;
+  }
+
+  .progress-track {
+    width: 100%;
+    height: 10px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 999px;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    width: 0%;
+    height: 100%;
+    background: linear-gradient(90deg, #f59e0b 0%, #fb7185 100%);
+    transition: width 0.3s ease;
   }
 </style>

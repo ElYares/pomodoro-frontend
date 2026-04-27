@@ -7,9 +7,53 @@ services:
     restart: always
     ports:
       - "3000:80"
+    depends_on:
+      - backend
     networks:
       - pomodoro_net
 
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: pomodoro-backend
+    restart: always
+    environment:
+      PORT: 8080
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: pomodoro
+      DB_USER: pomodoro
+      DB_PASSWORD: pomodoro
+      DEFAULT_USER_ID: 123
+      POMODORO_FOCUS_MINUTES: 25
+      POMODORO_SHORT_BREAK_MINUTES: 5
+      POMODORO_LONG_BREAK_MINUTES: 15
+      POMODORO_PER_CYCLE: 4
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
+    networks:
+      - pomodoro_net
+
+  db:
+    image: postgres:16-alpine
+    container_name: pomodoro-db
+    restart: always
+    environment:
+      POSTGRES_DB: pomodoro
+      POSTGRES_USER: pomodoro
+      POSTGRES_PASSWORD: pomodoro
+    ports:
+      - "5432:5432"
+    volumes:
+      - pomodoro_db_data:/var/lib/postgresql/data
+    networks:
+      - pomodoro_net
+
+volumes:
+  pomodoro_db_data:
+
 networks:
   pomodoro_net:
-    external: true
