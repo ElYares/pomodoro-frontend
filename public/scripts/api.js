@@ -82,6 +82,10 @@ export const authApi = {
 
 export const tasksApi = {
   getByUser: (userId) => request(`/tasks/user/${userId}`),
+  remove: (taskId) =>
+    request(`/tasks/${taskId}`, {
+      method: "DELETE",
+    }),
   complete: (taskId) =>
     request(`/tasks/${taskId}/complete`, {
       method: "PATCH",

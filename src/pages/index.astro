@@ -5,6 +5,7 @@ import CoffeeCanvas from "../components/CoffeeCanvas.astro";
 <html>
   <head>
     <title>Pomodoro Pixel</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="stylesheet" href="/styles.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=VT323&display=swap" rel="stylesheet">
   </head>
@@ -94,6 +95,10 @@ import CoffeeCanvas from "../components/CoffeeCanvas.astro";
             <p>Sube un archivo `.md` con checklist para crear tareas.</p>
           </div>
           <input type="file" name="file" accept=".md,text/markdown" />
+          <label class="import-option">
+            <input type="checkbox" name="replace_existing" value="true" />
+            <span>Reemplazar tareas actuales antes de importar</span>
+          </label>
           <button type="submit" class="primary-button">Importar tareas</button>
           <p id="import-message" class="feedback" hidden></p>
         </form>

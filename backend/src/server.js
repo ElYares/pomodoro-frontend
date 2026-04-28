@@ -356,21 +356,51 @@ app.put("/api/v1/tasks/:id", authRequired, async (req, res) => {
 
 app.delete("/api/v1/tasks/:id", authRequired, async (req, res) => {
   const { id } = req.params;
-  const result = await query(
-    `
-      DELETE FROM tasks
-      WHERE id = $1
-        AND user_id = $2
-      RETURNING id;
-    `,
-    [id, req.authUser.id]
-  );
+  const result = await withTransaction(async (client) => {
+    const taskResult = await client.query(
+      `
+        SELECT id
+        FROM tasks
+        WHERE id = $1
+          AND user_id = $2
+        LIMIT 1;
+      `,
+      [id, req.authUser.id]
+    );
 
-  if (!result.rowCount) {
-    return sendError(res, 404, "task not found");
-  }
+    if (!taskResult.rowCount) {
+      return { status: 404, payload: { error: "task not found" } };
+    }
 
-  res.json({ ok: true, id });
+    const activeSessionResult = await client.query(
+      `
+        SELECT id
+        FROM pomodoro_sessions
+        WHERE task_id = $1
+          AND user_id = $2
+          AND status = ANY($3::text[])
+        LIMIT 1;
+      `,
+      [id, req.authUser.id, ACTIVE_SESSION_STATUSES]
+    );
+
+    if (activeSessionResult.rowCount) {
+      return { status: 409, payload: { error: "cannot delete a task with an active session" } };
+    }
+
+    await client.query(
+      `
+        DELETE FROM tasks
+        WHERE id = $1
+          AND user_id = $2;
+      `,
+      [id, req.authUser.id]
+    );
+
+    return { status: 200, payload: { ok: true, id } };
+  });
+
+  res.status(result.status).json(result.payload);
 });
 
 app.patch("/api/v1/tasks/:id/complete", authRequired, async (req, res) => {
@@ -399,6 +429,7 @@ app.patch("/api/v1/tasks/:id/complete", authRequired, async (req, res) => {
 
 app.post("/api/v1/tasks/import-markdown", authRequired, upload.single("file"), async (req, res) => {
   const defaultProject = (req.body?.project_id || "general").trim();
+  const shouldReplaceExisting = String(req.body?.replace_existing || "").toLowerCase() === "true";
   const rawMarkdown = req.file
     ? req.file.buffer.toString("utf8")
     : req.body?.markdown || "";
@@ -414,6 +445,38 @@ app.post("/api/v1/tasks/import-markdown", authRequired, upload.single("file"), a
 
   const insertedTasks = await withTransaction(async (client) => {
     const created = [];
+    let replacedCount = 0;
+
+    if (shouldReplaceExisting) {
+      const activeSessionResult = await client.query(
+        `
+          SELECT id
+          FROM pomodoro_sessions
+          WHERE user_id = $1
+            AND status = ANY($2::text[])
+          LIMIT 1;
+        `,
+        [req.authUser.id, ACTIVE_SESSION_STATUSES]
+      );
+
+      if (activeSessionResult.rowCount) {
+        return {
+          blocked: true,
+          status: 409,
+          payload: { error: "cannot replace tasks while an active session exists" },
+        };
+      }
+
+      const deleteResult = await client.query(
+        `
+          DELETE FROM tasks
+          WHERE user_id = $1;
+        `,
+        [req.authUser.id]
+      );
+
+      replacedCount = deleteResult.rowCount || 0;
+    }
 
     for (const task of parsedTasks) {
       const result = await client.query(
@@ -438,12 +501,21 @@ app.post("/api/v1/tasks/import-markdown", authRequired, upload.single("file"), a
       created.push(mapTask(result.rows[0]));
     }
 
-    return created;
+    return {
+      blocked: false,
+      created,
+      replacedCount,
+    };
   });
 
+  if (insertedTasks.blocked) {
+    return res.status(insertedTasks.status).json(insertedTasks.payload);
+  }
+
   res.status(201).json({
-    imported: insertedTasks.length,
-    tasks: insertedTasks,
+    imported: insertedTasks.created.length,
+    replaced_count: insertedTasks.replacedCount,
+    tasks: insertedTasks.created,
   });
 });
 

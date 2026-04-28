@@ -224,10 +224,10 @@ async function createMainWindow(runtime) {
   process.env.POMODORO_DESKTOP_ENV = process.env.POMODORO_DESKTOP_ENV || "desktop";
 
   const window = new BrowserWindow({
-    width: 1480,
-    height: 960,
-    minWidth: 1120,
-    minHeight: 760,
+    width: 1320,
+    height: 920,
+    minWidth: 720,
+    minHeight: 640,
     autoHideMenuBar: true,
     backgroundColor: "#101010",
     title: "Pomodoro Pixel Desktop",

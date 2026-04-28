@@ -169,11 +169,23 @@ function renderTasks(tasks) {
       const rawStatus = task.status || "PENDING";
       const statusCode = rawStatus.toLowerCase();
       const statusText = statusLabels[rawStatus] || rawStatus;
+      const isLockedForDeletion = task.id === currentTaskId;
       return `
         <article class="task-card status-${statusCode} ${isActive ? "active" : ""}" data-task-id="${task.id}">
           <div class="card-header">
-            <span class="project-badge">${task.project_id}</span>
-            <span class="status-chip">${statusText}</span>
+            <div class="card-meta">
+              <span class="project-badge">${task.project_id}</span>
+              <span class="status-chip">${statusText}</span>
+            </div>
+            <button
+              type="button"
+              class="task-delete-button"
+              data-task-delete="${task.id}"
+              aria-label="Eliminar tarea ${task.title}"
+              ${isLockedForDeletion ? "disabled" : ""}
+            >
+              Eliminar
+            </button>
           </div>
           <h3 class="task-title">${task.title}</h3>
           <p class="task-desc">${task.description || "Sin descripcion"}</p>
@@ -185,6 +197,31 @@ function renderTasks(tasks) {
       `;
     })
     .join("");
+}
+
+async function deleteTask(taskId) {
+  const task = allTasks.find((item) => item.id === taskId);
+  if (!task) {
+    return;
+  }
+
+  if (taskId === currentTaskId) {
+    setBanner("No puedes eliminar la tarea activa o en descanso.", "error");
+    return;
+  }
+
+  const confirmed = window.confirm(`Eliminar la tarea "${task.title}"? Esta accion no se puede deshacer.`);
+  if (!confirmed) {
+    return;
+  }
+
+  try {
+    await tasksApi.remove(taskId);
+    await refreshTasks();
+    setBanner(`Tarea "${task.title}" eliminada.`, "success");
+  } catch (error) {
+    setBanner(error.message, "error");
+  }
 }
 
 async function refreshTasks() {
@@ -479,6 +516,7 @@ async function onImportSubmit(event) {
   const form = event.currentTarget;
   const formData = new FormData(form);
   const file = formData.get("file");
+  const shouldReplaceExisting = formData.get("replace_existing") === "true";
 
   if (!(file instanceof File) || !file.name) {
     setImportMessage("Selecciona un archivo Markdown.", "error");
@@ -488,11 +526,21 @@ async function onImportSubmit(event) {
   try {
     const payload = new FormData();
     payload.append("file", file);
+    payload.append("replace_existing", shouldReplaceExisting ? "true" : "false");
     const result = await tasksApi.importMarkdown(payload);
     form.reset();
     await refreshTasks();
-    setImportMessage(`Se importaron ${result.imported} tareas.`, "success");
-    setBanner("Tareas cargadas desde Markdown.", "success");
+    const replaceCopy =
+      result.replaced_count > 0
+        ? ` Se reemplazaron ${result.replaced_count} tareas anteriores.`
+        : "";
+    setImportMessage(`Se importaron ${result.imported} tareas.${replaceCopy}`, "success");
+    setBanner(
+      shouldReplaceExisting
+        ? "Markdown importado y tareas anteriores reemplazadas."
+        : "Tareas cargadas desde Markdown.",
+      "success"
+    );
   } catch (error) {
     setImportMessage(error.message, "error");
   }
@@ -600,6 +648,13 @@ window.addEventListener("DOMContentLoaded", async () => {
   ui.logoutButton.addEventListener("click", logout);
 
   ui.tasksRoot.addEventListener("click", async (event) => {
+    const deleteButton = event.target.closest("[data-task-delete]");
+    if (deleteButton) {
+      event.stopPropagation();
+      await deleteTask(deleteButton.dataset.taskDelete);
+      return;
+    }
+
     const card = event.target.closest(".task-card");
     if (!card) return;
     await handleTaskSelection(card.dataset.taskId);
