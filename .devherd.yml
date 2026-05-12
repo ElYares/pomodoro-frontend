@@ -1,0 +1,14 @@
+version: 1
+
+compose:
+  files:
+    - docker-compose.yml
+
+proxy:
+  domain: pomodoro.localhost
+  service: frontend
+  port: 80
+
+notes:
+  - "Root compose includes frontend, backend and Postgres."
+  - "Frontend is the main browser entrypoint."
